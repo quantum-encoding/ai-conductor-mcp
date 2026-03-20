@@ -1,0 +1,42 @@
+{
+  "name": "@quantum-encoding/cosmic-duck-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Claude Code — generate images, videos, audio, search the web, and more via Quantum AI",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "cosmic-duck-mcp": "dist/index.js",
+    "cosmic-duck-setup": "dist/setup.js"
+  },
+  "files": [
+    "dist",
+    "claude-commands"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  },
+  "keywords": [
+    "mcp",
+    "claude",
+    "claude-code",
+    "ai",
+    "image-generation",
+    "video",
+    "tts",
+    "quantum-ai"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/quantum-encoding/qe-sdk-collection"
+  }
+}
