@@ -1,7 +1,7 @@
 {
   "name": "@quantum-encoding/cosmic-duck-mcp",
-  "version": "0.1.0",
-  "description": "MCP server for Claude Code — generate images, videos, audio, search the web, and more via Quantum AI",
+  "version": "0.4.0",
+  "description": "MCP server for Claude Code — 18 tools: chat, images, video, audio, screenshots, web search, code scanning, GPU rental, and more via Quantum AI",
   "type": "module",
   "main": "dist/index.js",
   "bin": {

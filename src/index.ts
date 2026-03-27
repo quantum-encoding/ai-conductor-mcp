@@ -3,8 +3,9 @@
 /**
  * Cosmic Duck MCP Server — Claude Code integration for Quantum AI.
  *
- * Exposes generate_image, generate_video, text_to_speech, transcribe,
- * generate_music, web_search, rag_search, and list_models as MCP tools.
+ * Exposes 18 tools: image gen/edit, video, TTS, STT, music, sound effects,
+ * web search, RAG search, screenshots, doc scraping, code scanning,
+ * voice cloning, GPU rental, chat, and account management.
  *
  * Claude Code auto-discovers these tools via MCP config and uses them
  * autonomously during tasks. All calls go through api.quantumencoding.ai
@@ -69,7 +70,7 @@ async function qaiGet(path: string): Promise<unknown> {
 
 const server = new McpServer({
   name: "cosmic-duck",
-  version: "0.1.0",
+  version: "0.4.0",
 });
 
 // ── Tools ──
@@ -189,7 +190,7 @@ server.tool(
     model: z.string().optional().describe("Model (default: tts-1). Options: tts-1, eleven_multilingual_v2, grok-3-tts"),
   },
   async ({ text, voice, model }) => {
-    const resp = await qaiPost("/qai/v1/audio/speak", {
+    const resp = await qaiPost("/qai/v1/audio/tts", {
       model: model || "tts-1",
       text,
       voice: voice || "alloy",
@@ -221,7 +222,7 @@ server.tool(
     language: z.string().optional().describe("Language code e.g. 'en', 'es'"),
   },
   async ({ audio_base64, model, language }) => {
-    const resp = await qaiPost("/qai/v1/audio/transcribe", {
+    const resp = await qaiPost("/qai/v1/audio/stt", {
       model: model || "whisper-1",
       audio_base64,
       language,
@@ -311,6 +312,207 @@ server.tool(
         type: "text" as const,
         text: `Balance: ${resp.balance_display || resp.balance || "unknown"}`,
       }],
+    };
+  }
+);
+
+server.tool(
+  "chat",
+  "Send a message to any AI model via the Quantum AI gateway. Use this to delegate tasks to other models — e.g. ask Gemini to summarize, Grok to research, DeepSeek to code. Supports all 10 providers.",
+  {
+    model: z.string().describe("Model ID (e.g. gemini-2.5-flash, grok-3-mini, deepseek-chat, claude-sonnet-4-6, gpt-5-mini)"),
+    message: z.string().describe("The message/prompt to send"),
+    system_prompt: z.string().optional().describe("System prompt to set context"),
+    max_tokens: z.number().optional().describe("Max tokens to generate"),
+    temperature: z.number().optional().describe("Temperature (0-2)"),
+  },
+  async ({ model, message, system_prompt, max_tokens, temperature }) => {
+    const body: Record<string, unknown> = {
+      model,
+      messages: [{ role: "user", content: message }],
+    };
+    if (system_prompt) body.system_prompt = system_prompt;
+    if (max_tokens) body.max_tokens = max_tokens;
+    if (temperature !== undefined) body.temperature = temperature;
+
+    const resp = await qaiPost("/qai/v1/chat", body) as any;
+    const text = resp.content?.[0]?.text || resp.content || JSON.stringify(resp);
+    return { content: [{ type: "text" as const, text }] };
+  }
+);
+
+server.tool(
+  "web_search",
+  "Search the web using Brave Search. Returns ranked results with titles, URLs, and descriptions.",
+  {
+    query: z.string().describe("Search query"),
+    count: z.number().optional().describe("Number of results (default 5)"),
+    freshness: z.string().optional().describe("Time filter: 'pd' (past day), 'pw' (past week), 'pm' (past month)"),
+  },
+  async ({ query, count, freshness }) => {
+    const resp = await qaiPost("/qai/v1/search/web", { query, count: count || 5, freshness }) as any;
+    const results = resp.web || [];
+    if (results.length === 0) return { content: [{ type: "text" as const, text: "No results found." }] };
+
+    const text = results.map((r: any, i: number) =>
+      `${i + 1}. **${r.title}**\n   ${r.url}\n   ${r.description || ""}\n`
+    ).join("\n");
+    return { content: [{ type: "text" as const, text }] };
+  }
+);
+
+server.tool(
+  "search_context",
+  "Get LLM-optimized web content chunks for a query. Better than web_search for grounding — returns extracted page content, not just snippets.",
+  {
+    query: z.string().describe("Search query"),
+    count: z.number().optional().describe("Number of content chunks (default 3)"),
+  },
+  async ({ query, count }) => {
+    const resp = await qaiPost("/qai/v1/search/context", { query, count: count || 3 }) as any;
+    const chunks = resp.chunks || [];
+    if (chunks.length === 0) return { content: [{ type: "text" as const, text: "No content found." }] };
+
+    const text = chunks.map((c: any) => `### ${c.title}\n${c.url}\n\n${c.content}\n`).join("\n---\n\n");
+    return { content: [{ type: "text" as const, text }] };
+  }
+);
+
+server.tool(
+  "sound_effects",
+  "Generate sound effects from a text description.",
+  {
+    prompt: z.string().describe("Sound effect description (e.g. 'thunder crack', 'door creaking open')"),
+    duration_seconds: z.number().optional().describe("Duration in seconds"),
+  },
+  async ({ prompt, duration_seconds }) => {
+    const resp = await qaiPost("/qai/v1/audio/sound-effects", { prompt, duration_seconds }) as any;
+    return {
+      content: [{ type: "text" as const, text: `Generated sound effect: ${resp.format}, ${resp.size_bytes} bytes` }],
+    };
+  }
+);
+
+server.tool(
+  "clone_voice",
+  "Clone a voice from an audio sample. Returns the new voice ID for use in TTS.",
+  {
+    name: z.string().describe("Name for the cloned voice"),
+    audio_base64: z.string().describe("Base64-encoded audio sample of the voice to clone"),
+  },
+  async ({ name, audio_base64 }) => {
+    const form = new FormData();
+    form.append("name", name);
+    const blob = new Blob([Buffer.from(audio_base64, "base64")], { type: "audio/mp3" });
+    form.append("files", blob, "sample.mp3");
+
+    const resp = await fetch(`${API_BASE}/qai/v1/voices/clone`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${API_KEY}`, "X-API-Key": API_KEY },
+      body: form,
+    });
+    const data = await resp.json() as any;
+    return {
+      content: [{ type: "text" as const, text: `Voice cloned: ${data.voice_id} (name: ${data.name})` }],
+    };
+  }
+);
+
+server.tool(
+  "screenshot",
+  "Take screenshots of web pages. Returns base64 PNG images.",
+  {
+    urls: z.array(z.string()).describe("URLs to screenshot (1-5)"),
+    full_page: z.boolean().optional().describe("Capture full scrollable page (default false)"),
+    width: z.number().optional().describe("Viewport width (default 1280)"),
+    height: z.number().optional().describe("Viewport height (default 800)"),
+  },
+  async ({ urls, full_page, width, height }) => {
+    const resp = await qaiPost("/qai/v1/scraper/screenshot", {
+      urls: urls.map(url => ({ url, full_page, width, height })),
+    }) as any;
+
+    const content: any[] = [];
+    for (const s of (resp.screenshots || [])) {
+      if (s.base64 && !s.error) {
+        content.push({ type: "image" as const, data: s.base64, mimeType: "image/png" });
+      } else if (s.error) {
+        content.push({ type: "text" as const, text: `Failed: ${s.url} — ${s.error}` });
+      }
+    }
+    if (content.length === 0) content.push({ type: "text" as const, text: "No screenshots captured" });
+    return { content };
+  }
+);
+
+server.tool(
+  "scrape_docs",
+  "Scrape documentation from a website. Crawls pages and extracts content. Results stored as an async job.",
+  {
+    name: z.string().describe("Name for this scrape target"),
+    url: z.string().describe("Starting URL to scrape"),
+    selector: z.string().optional().describe("CSS selector for nav links (default: 'nav a[href]')"),
+    content: z.string().optional().describe("CSS selector for content area (default: 'article, main')"),
+    recursive: z.boolean().optional().describe("Follow links recursively (default false)"),
+    max_pages: z.number().optional().describe("Max pages to scrape (default 50)"),
+  },
+  async ({ name, url, selector, content: contentSel, recursive, max_pages }) => {
+    const resp = await qaiPost("/qai/v1/scraper/scrape", {
+      targets: [{ name, url, selector, content: contentSel, recursive, max_pages: max_pages || 50 }],
+    }) as any;
+    return {
+      content: [{ type: "text" as const, text: `Scrape job submitted: ${resp.job_id}. Poll with job_status tool.` }],
+    };
+  }
+);
+
+server.tool(
+  "scan_codebase",
+  "Scan a codebase to extract types, fields, and functions. Supports GitHub repos and local paths. Use for understanding code structure.",
+  {
+    source: z.string().describe("GitHub URL (e.g. github.com/org/repo) or local path"),
+    name: z.string().optional().describe("Display name for the scan"),
+    languages: z.array(z.string()).optional().describe("Filter languages (rust, go, typescript, python, swift, kotlin)"),
+  },
+  async ({ source, name, languages }) => {
+    const resp = await qaiPost("/qai/v1/scanner/scan", { source, name, languages }) as any;
+    const stats = resp.stats || {};
+    return {
+      content: [{ type: "text" as const, text: `Scan complete: ${resp.name} (${resp.scan_id})\nTypes: ${stats.types}, Fields: ${stats.fields}, Functions: ${stats.functions}\nQuery types with: GET /qai/v1/scanner/scans/${resp.scan_id}/types` }],
+    };
+  }
+);
+
+server.tool(
+  "rent_gpu",
+  "Provision a GPU or CPU machine on GCE. Returns instance ID and SSH details.",
+  {
+    template: z.string().describe("Machine template (gpu-t4-1x, gpu-l4-1x, gpu-l4-2x, gpu-a100-40, gpu-a100-80, gpu-h100-80, cpu-e2-4, cpu-e2-8, cpu-c3-8)"),
+    zone: z.string().optional().describe("GCE zone (default: us-central1-a)"),
+    spot: z.boolean().optional().describe("Use spot/preemptible pricing (up to 70% cheaper)"),
+    ssh_public_key: z.string().optional().describe("SSH public key to inject for access"),
+    auto_teardown_minutes: z.number().optional().describe("Auto-teardown after inactivity (default 30)"),
+  },
+  async ({ template, zone, spot, ssh_public_key, auto_teardown_minutes }) => {
+    const resp = await qaiPost("/qai/v1/compute/provision", {
+      template, zone, spot, ssh_public_key, auto_teardown_minutes,
+    }) as any;
+    return {
+      content: [{ type: "text" as const, text: `GPU provisioned: ${resp.instance_id}\nTemplate: ${template}\nSSH: ${resp.ssh_address || "pending"}\nHourly: $${resp.price_per_hour_usd || "?"}` }],
+    };
+  }
+);
+
+server.tool(
+  "job_status",
+  "Check the status of an async job (video generation, scraping, screenshots, etc.).",
+  {
+    job_id: z.string().describe("Job ID to check"),
+  },
+  async ({ job_id }) => {
+    const resp = await qaiGet(`/qai/v1/jobs/${job_id}`) as any;
+    return {
+      content: [{ type: "text" as const, text: `Job ${job_id}: ${resp.status}${resp.error ? ` — Error: ${resp.error}` : ""}${resp.result ? `\nResult: ${JSON.stringify(resp.result).slice(0, 1000)}` : ""}` }],
     };
   }
 );
