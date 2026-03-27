@@ -80,7 +80,7 @@ server.tool(
   "Generate an image using AI. Returns base64 image data. Supports multiple providers: xAI Imagine, OpenAI GPT Image, DALL-E 3, Google Imagen, Gemini Flash.",
   {
     prompt: z.string().describe("Detailed description of the image to generate"),
-    model: z.string().optional().describe("Model ID (default: grok-imagine-image). Options: grok-imagine-image, gpt-image-1, dall-e-3, gemini-2.5-flash-image, imagen-4.0-generate-001"),
+    model: z.string().optional().describe("Image model (default: grok-imagine-image). Use list_models for all options."),
     count: z.number().optional().describe("Number of images (1-4, default 1)"),
     aspect_ratio: z.string().optional().describe("Aspect ratio e.g. '1:1', '16:9', '9:16'"),
     size: z.string().optional().describe("Size e.g. '1024x1024', '1536x1024'"),
@@ -126,7 +126,7 @@ server.tool(
   {
     prompt: z.string().describe("Describe the edit to make"),
     image_base64: z.string().describe("Base64-encoded source image"),
-    model: z.string().optional().describe("Model (default: gpt-image-1)"),
+    model: z.string().optional().describe("Edit model (default: gpt-image-1)"),
   },
   async ({ prompt, image_base64, model }) => {
     const resp = await qaiPost("/qai/v1/images/edit", {
@@ -159,7 +159,7 @@ server.tool(
   "Generate a short video clip using AI. Returns when the job is queued — video generation takes 1-5 minutes.",
   {
     prompt: z.string().describe("Video scene description"),
-    model: z.string().optional().describe("Model (default: grok-imagine-video). Options: grok-imagine-video, sora-2, veo-3.1-generate-001"),
+    model: z.string().optional().describe("Video model (default: grok-imagine-video). Use list_models for all options."),
     duration_seconds: z.number().optional().describe("Duration in seconds (4-12, default 8)"),
   },
   async ({ prompt, model, duration_seconds }) => {
@@ -186,8 +186,8 @@ server.tool(
   "Convert text to speech audio. Returns base64 audio data.",
   {
     text: z.string().describe("Text to convert to speech"),
-    voice: z.string().optional().describe("Voice (default: alloy). Options: alloy, echo, fable, onyx, nova, shimmer"),
-    model: z.string().optional().describe("Model (default: tts-1). Options: tts-1, eleven_multilingual_v2, grok-3-tts"),
+    voice: z.string().optional().describe("Voice (default: alloy). Common: alloy, echo, fable, onyx, nova, shimmer"),
+    model: z.string().optional().describe("TTS model (default: tts-1). Use list_models for all options."),
   },
   async ({ text, voice, model }) => {
     const resp = await qaiPost("/qai/v1/audio/tts", {
@@ -218,7 +218,7 @@ server.tool(
   "Transcribe audio to text using speech-to-text.",
   {
     audio_base64: z.string().describe("Base64-encoded audio file"),
-    model: z.string().optional().describe("Model (default: whisper-1)"),
+    model: z.string().optional().describe("STT model (default: whisper-1)"),
     language: z.string().optional().describe("Language code e.g. 'en', 'es'"),
   },
   async ({ audio_base64, model, language }) => {
@@ -320,7 +320,7 @@ server.tool(
   "chat",
   "Send a message to any AI model via the Quantum AI gateway. Use this to delegate tasks to other models — e.g. ask Gemini to summarize, Grok to research, DeepSeek to code. Supports all 10 providers.",
   {
-    model: z.string().describe("Model ID (e.g. gemini-2.5-flash, grok-3-mini, deepseek-chat, claude-sonnet-4-6, gpt-5-mini)"),
+    model: z.string().describe("Model ID — use list_models tool to see all available models with pricing. Common: gemini-2.5-flash, claude-sonnet-4-6, grok-4-1-fast-reasoning, deepseek-reasoner, gpt-5-nano"),
     message: z.string().describe("The message/prompt to send"),
     system_prompt: z.string().optional().describe("System prompt to set context"),
     max_tokens: z.number().optional().describe("Max tokens to generate"),
