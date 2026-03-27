@@ -1,12 +1,12 @@
 {
-  "name": "@quantum-encoding/cosmic-duck-mcp",
-  "version": "0.4.0",
-  "description": "MCP server for Claude Code — 18 tools: chat, images, video, audio, screenshots, web search, code scanning, GPU rental, and more via Quantum AI",
+  "name": "@quantum-encoding/ai-conductor-mcp",
+  "version": "0.4.1",
+  "description": "MCP server for Claude Code — 19 AI tools: multi-model chat, images, video, audio, screenshots, web search, code scanning, GPU rental via Quantum AI",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "cosmic-duck-mcp": "dist/index.js",
-    "cosmic-duck-setup": "dist/setup.js"
+    "ai-conductor-mcp": "dist/index.js",
+    "ai-conductor-setup": "dist/setup.js"
   },
   "files": [
     "dist",
@@ -37,6 +37,6 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/quantum-encoding/qe-sdk-collection"
+    "url": "https://github.com/quantum-encoding/ai-conductor-mcp"
   }
 }

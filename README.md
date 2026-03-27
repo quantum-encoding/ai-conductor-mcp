@@ -10,7 +10,7 @@ MCP server for Claude Code that gives you 19 AI tools through a single API key. 
   "mcpServers": {
     "ai-conductor": {
       "command": "npx",
-      "args": ["@quantum-encoding/cosmic-duck-mcp"],
+      "args": ["@quantum-encoding/ai-conductor-mcp"],
       "env": { "QAI_API_KEY": "qai_k_YOUR_KEY" }
     }
   }

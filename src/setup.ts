@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * Setup script: installs Cosmic Duck MCP server + slash commands into Claude Code.
+ * Setup script: installs AI Conductor MCP server + slash commands into Claude Code.
  *
  * Usage:
- *   npx @quantum-encoding/cosmic-duck-mcp setup <QAI_API_KEY>
- *   npx @quantum-encoding/cosmic-duck-mcp setup qai_xxx
+ *   npx @quantum-encoding/ai-conductor-mcp setup <QAI_API_KEY>
+ *   npx @quantum-encoding/ai-conductor-mcp setup qai_xxx
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, copyFileSync } from "fs";
@@ -17,8 +17,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const apiKey = process.argv[2];
 if (!apiKey || !apiKey.startsWith("qai_")) {
-  console.error("Usage: cosmic-duck-mcp setup <QAI_API_KEY>");
-  console.error("  Get your key at https://cosmicduck.app/settings");
+  console.error("Usage: ai-conductor-mcp setup <QAI_API_KEY>");
+  console.error("  Get your key at https://quantumencoding.ai/dashboard/settings/settings");
   process.exit(1);
 }
 
@@ -28,7 +28,7 @@ const mcpPath = join(claudeDir, "mcp.json");
 const commandsDir = join(claudeDir, "commands");
 
 // 1. Install MCP server config
-console.log("\n🦆 Cosmic Duck — Claude Code Setup\n");
+console.log("\n🦆 AI Conductor — Claude Code Setup\n");
 
 mkdirSync(claudeDir, { recursive: true });
 
@@ -43,9 +43,9 @@ if (existsSync(mcpPath)) {
 
 if (!mcpConfig.servers) mcpConfig.servers = {};
 
-mcpConfig.servers["cosmic-duck"] = {
+mcpConfig.servers["ai-conductor"] = {
   command: "npx",
-  args: ["@quantum-encoding/cosmic-duck-mcp"],
+  args: ["@quantum-encoding/ai-conductor-mcp"],
   env: { QAI_API_KEY: apiKey },
 };
 

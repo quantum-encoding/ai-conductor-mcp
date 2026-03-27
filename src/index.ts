@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Cosmic Duck MCP Server — Claude Code integration for Quantum AI.
+ * AI Conductor MCP Server — Claude Code integration for Quantum AI.
  *
  * Exposes 18 tools: image gen/edit, video, TTS, STT, music, sound effects,
  * web search, RAG search, screenshots, doc scraping, code scanning,
@@ -12,12 +12,12 @@
  * with the user's QAI API key for billing.
  *
  * Setup:
- *   QAI_API_KEY=qai_xxx npx @quantum-encoding/cosmic-duck-mcp
+ *   QAI_API_KEY=qai_xxx npx @quantum-encoding/ai-conductor-mcp
  *
  * Or in ~/.claude/mcp.json:
  *   { "servers": { "cosmic-duck": {
  *       "command": "npx",
- *       "args": ["@quantum-encoding/cosmic-duck-mcp"],
+ *       "args": ["@quantum-encoding/ai-conductor-mcp"],
  *       "env": { "QAI_API_KEY": "qai_xxx" }
  *   }}}
  */
@@ -69,7 +69,7 @@ async function qaiGet(path: string): Promise<unknown> {
 // ── MCP Server ──
 
 const server = new McpServer({
-  name: "cosmic-duck",
+  name: "ai-conductor",
   version: "0.4.0",
 });
 
